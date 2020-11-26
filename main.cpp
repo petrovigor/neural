@@ -41,8 +41,21 @@ public:
   // { 0.f, 0.f, 0.f, 0.f }, <- four neurons in hidden layer
   // { 0.f },                <- only one output signal
   NeuralNetwork(const std::vector<std::vector<node>>& vv) {
+    const size_t layers_count = vv.size();
+    if(layers_count < 3)
+      throw std::invalid_argument("It should be at least three layers");
+
+    input_neurons = vv.front( ).size( );
+    output_neurons = vv.back( ).size( );
+
     nodes = vv;
     buildStartupWeights();
+
+    std::cout << "Created neural network with " <<
+      layers_count << " layers, " <<
+      input_neurons << " input signals, " <<
+      output_neurons << " output signals and " <<
+      weights.size() << " weights" << std::endl;
   }
 
   void print() const {
@@ -120,7 +133,6 @@ private:
 
     weights.reserve(weight_n);
 
-    std::cout << "weights count: " << weight_n << std::endl;
     for(size_t i = 0; i < weight_n; ++i) {
       //fill weights to random low value
       weights.emplace_back( randw() );
@@ -130,6 +142,8 @@ private:
 private:
   std::vector<std::vector<node>> nodes;
   std::vector<float> weights;
+  size_t input_neurons;
+  size_t output_neurons;
 
 };
 
