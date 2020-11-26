@@ -15,8 +15,8 @@ float randw() {
 
 static int node_index = 0;
 struct node {
-  node(float _v)
-   : val(_v)
+  node()
+   : val(0.f)
    , index(++node_index)
   { }
 
@@ -44,20 +44,24 @@ struct Layer {
 
 class NeuralNetwork {
 public:
-  //network should be initialized by passing 'Layer' array
-  //of float values, where values doesn't really matter,
-  //matters only count of elements at all
-  //
-  //example of network with 3 layers(input + hidden + output):
-  // { Layer( { 0, 0 } ),       <- two input signals
-  // Layer( { 0, 0, 0, 0 } ), <- four neurons in hidden layer
-  // Layer( { 0 } ) }         <- only one output signal
-  NeuralNetwork(const std::vector<Layer>& _layers) {
-    const size_t layers_count = _layers.size();
+  //network should be initialized by passing size_t array
+  //of layers represented
+
+  //NeuralNetwork nn ({ 2, 4, 1 });
+  //creates network with three layers:
+  // first (input layer) with two signals,
+  // second (first hidden layer) with four neurons and
+  // third (output layer) with one signal
+  NeuralNetwork(const std::vector<int>& layer_sizes) {
+    const size_t layers_count = layer_sizes.size();
     if(layers_count < 3)
       throw std::invalid_argument("It should be at least three layers");
 
-    layers = _layers;
+    layers.reserve( layers_count );
+    for(size_t i = 0; i < layers_count; ++i) {
+      layers.emplace_back( std::vector<node>( layer_sizes[i] ) );
+    }
+
     input_neurons = layers.front( ).size( );
     output_neurons = layers.back( ).size( );
 
@@ -160,11 +164,7 @@ private:
 };
 
 int main() {
-  NeuralNetwork nn(std::vector<Layer> {
-    Layer( { 0, 0 } ),
-    Layer( { 0, 0, 0, 0 } ),
-    Layer( { 0 } )
-  });
+  NeuralNetwork nn ({ 2, 4, 1 });
 
   nn.print();
 
