@@ -92,7 +92,9 @@ public:
       weights.size() << " weights" << std::endl;
   }
 
-  void print() const {
+  void print_values() const {
+    std::cout << "neuron values: " << std::endl;
+
     size_t max_lines = 0;
     for(size_t i = 0; i < layers.size(); ++i)
       max_lines = std::max(max_lines, layers[i].size());
@@ -105,6 +107,28 @@ public:
           std::cout << "        " << "\t";
       }
       std::cout << std::endl;
+    }
+
+    std::cout << std::endl;
+  }
+
+  void print_weights() const {
+    std::cout << "weights: " << std::endl;
+
+    for(size_t i = 1; i < layers.size(); ++i) {
+      const size_t n_prev = layers[i - 1].size();
+      const size_t n_next = layers[i].size();
+
+      size_t weight_index = 0;
+
+      for(size_t k = 0; k < n_next; ++k) {
+        for(size_t j = 0; j < n_prev; ++j) {
+          std::cout << weights[weight_index + j] << " ";
+        }
+        std::cout << std::endl;
+
+        weight_index += n_prev;
+      }
     }
   }
 
@@ -260,7 +284,8 @@ private:
 int main() {
   NeuralNetwork nn ({ 2, 4, 1 });
 
-  nn.print();
+  nn.print_values();
+  nn.print_weights();
 
   nn.traverse();
 
@@ -276,6 +301,9 @@ int main() {
   nn.calculateErrors();
 
   nn.learn();
+
+  nn.print_values();
+  nn.print_weights();
 
   return 0;
 }
