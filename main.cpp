@@ -18,10 +18,12 @@ struct node {
   node()
    : val(0.f)
    , index(++node_index)
+   , error(0.f)
   { }
 
   int index; //only for debug print
   float val; //its not a weight
+  float error;
 };
 
 //activation function
@@ -33,13 +35,19 @@ float activation_fn(float val) {
 struct Layer {
   Layer(const std::vector<node>& _nodes)
     : nodes(_nodes)
+    , weight_start_index(0u)
   { }
 
   size_t size() const noexcept {
     return nodes.size();
   }
 
+  void setWeightStartIndex(size_t i) {
+    weight_start_index = i;
+  }
+
   std::vector<node> nodes;
+  size_t weight_start_index;
 };
 
 class NeuralNetwork {
@@ -129,10 +137,40 @@ public:
     }
   }
 
-  float calculateError() {
-    //last node of the last layer is output node
-    const node& output_node = layers.back( ).nodes.back( );
-    return 1.f - output_node.val;
+  void calculateErrors() {
+    //calculate error for output node
+    node& output_node = outputLayer().nodes.back( );
+    output_node.error = 1.f - output_node.val;
+    std::cout << "finding errors for output node: " << output_node.error << std::endl;
+
+    //calculate errors for hidden layers
+    for(size_t i = layers.size() - 1; i > 1; --i) {
+      std::cout << "finding errors for " << i << " layer" << std::endl;
+
+      auto& hidden = layers[i - 1]; //hidden layer
+      const auto& output = layers[i]; //output layer
+
+      //after that weight index points to the weight
+      //between the first node of hidden and node of output(or next) layer
+      size_t weight_index = hidden.weight_start_index;
+
+      for(size_t j = 0; j < hidden.size(); ++j) {
+        float error = 0.f;
+
+        std::cout << "\t" << "errors for node " << hidden.nodes[j].index << " windex: " << weight_index;
+
+        for(size_t k = 0; k < output.size(); ++k) {
+          error += output.nodes[k].error * weights[weight_index];
+        }
+
+        hidden.nodes[j].error = error;
+        std::cout << " " << error << std::endl;
+
+        //move weight_index to the weight
+        //of the next node in hidden layer
+        ++weight_index;
+      }
+    }
   }
 
 private:
@@ -143,9 +181,16 @@ private:
     size_t weight_n = 0;
 
     //get count of weights between neurons
-    for(int i = 1; i < layers.size(); ++i) {
+    for(size_t i = 1; i < layers.size(); ++i) {
       const size_t n_prev = layers[i - 1].size();
       const size_t n_next = layers[i].size();
+
+      layers[i - 1].setWeightStartIndex(weight_n);
+
+#if _DEBUG && 0
+      std::cout << "start index of layer[" << (i-1) << "] is " <<
+        layers[i - 1].weight_start_index << std::endl;
+#endif //DEBUG
 
       weight_n += n_prev * n_next;
     }
@@ -156,6 +201,14 @@ private:
       //fill weights to random low value
       weights.emplace_back( randw() );
     }
+  }
+
+  Layer& inputLayer() {
+    return layers.front( );
+  }
+
+  Layer& outputLayer() {
+    return layers.back( );
   }
 
 private:
@@ -182,10 +235,7 @@ int main() {
   //we are waiting for 1 output, so
   //error for the last node will be defined as: '1.f - x'
 
-  std::cout << "first generation finished with error: " <<
-    nn.calculateError() << std::endl;
-
-  nn.print();
+  nn.calculateErrors();
 
   return 0;
 }
