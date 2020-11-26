@@ -24,22 +24,6 @@ struct node {
   float val; //its not a weight
 };
 
-void print(const std::vector<std::vector<node>>& nodes) {
-  size_t max_lines = 0;
-  for(int i = 0; i < nodes.size(); ++i)
-    max_lines = std::max(max_lines, nodes[i].size());
-
-  for(size_t i = 0; i < max_lines; ++i) {
-    for(size_t j = 0; j < nodes.size(); ++j) {
-      if(nodes[j].size() > i)
-        std::cout << std::to_string(nodes[j][i].val) << "\t";
-      else
-        std::cout << "        " << "\t";
-    }
-    std::cout << std::endl;
-  }
-}
-
 //activation function
 float activation_fn(float val) {
   //return bounds [0.f, 1.f]
