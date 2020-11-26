@@ -47,6 +47,8 @@ struct Layer {
   }
 
   std::vector<node> nodes;
+
+  //this logic should be moved into main class
   size_t weight_start_index;
 };
 
