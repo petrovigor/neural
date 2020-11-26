@@ -30,25 +30,37 @@ float activation_fn(float val) {
   return 1.f / ( 1.f + std::exp( -1.f * val ) );
 }
 
+struct Layer {
+  Layer(const std::vector<node>& _nodes)
+    : nodes(_nodes)
+  { }
+
+  size_t size() const noexcept {
+    return nodes.size();
+  }
+
+  std::vector<node> nodes;
+};
+
 class NeuralNetwork {
 public:
-  //network should be initialized by passing two dimensional array
+  //network should be initialized by passing 'Layer' array
   //of float values, where values doesn't really matter,
-  //matters only count of elements
+  //matters only count of elements at all
   //
   //example of network with 3 layers(input + hidden + output):
-  // { 1.f, 0.f },           <- two input signals
-  // { 0.f, 0.f, 0.f, 0.f }, <- four neurons in hidden layer
-  // { 0.f },                <- only one output signal
-  NeuralNetwork(const std::vector<std::vector<node>>& vv) {
-    const size_t layers_count = vv.size();
+  // { Layer( { 0, 0 } ),       <- two input signals
+  // Layer( { 0, 0, 0, 0 } ), <- four neurons in hidden layer
+  // Layer( { 0 } ) }         <- only one output signal
+  NeuralNetwork(const std::vector<Layer>& _layers) {
+    const size_t layers_count = _layers.size();
     if(layers_count < 3)
       throw std::invalid_argument("It should be at least three layers");
 
-    input_neurons = vv.front( ).size( );
-    output_neurons = vv.back( ).size( );
+    layers = _layers;
+    input_neurons = layers.front( ).size( );
+    output_neurons = layers.back( ).size( );
 
-    nodes = vv;
     buildStartupWeights();
 
     std::cout << "Created neural network with " <<
@@ -60,13 +72,13 @@ public:
 
   void print() const {
     size_t max_lines = 0;
-    for(int i = 0; i < nodes.size(); ++i)
-      max_lines = std::max(max_lines, nodes[i].size());
+    for(int i = 0; i < layers.size(); ++i)
+      max_lines = std::max(max_lines, layers[i].size());
 
     for(size_t i = 0; i < max_lines; ++i) {
-      for(size_t j = 0; j < nodes.size(); ++j) {
-        if(nodes[j].size() > i)
-          std::cout << std::to_string(nodes[j][i].val) << "\t";
+      for(size_t j = 0; j < layers.size(); ++j) {
+        if(layers[j].size() > i)
+          std::cout << std::to_string(layers[j].nodes[i].val) << "\t";
         else
           std::cout << "        " << "\t";
       }
@@ -76,24 +88,24 @@ public:
 
   //travers neural network and updates node values each once
   void traverse() {
-    for(int i = 1; i < nodes.size(); ++i) {
-      std::cout << "count " << i << " layer of " << (nodes.size() - 1) << std::endl;
+    for(int i = 1; i < layers.size(); ++i) {
+      std::cout << "count " << i << " layer of " << (layers.size() - 1) << std::endl;
 
-      const size_t n_prev = nodes[i - 1].size();
-      const size_t n_next = nodes[i].size();
+      const size_t n_prev = layers[i - 1].size();
+      const size_t n_next = layers[i].size();
 
       size_t weight_index = 0;
 
       for(int k = 0; k < n_next; ++k) {
         float val = 0.f;
 
-        std::cout << "[" << nodes[i][k].index << "] = f(";
+        std::cout << "[" << layers[i].nodes[k].index << "] = f(";
 
         //std::cout << "from " << nodes[i - 1][j] << " to " << nodes[i][k] << std::endl;
 
         for(int j = 0; j < n_prev; ++j) {
-          val += ( nodes[i - 1][j].val * weights[weight_index + j] );
-          std::cout << "(" << nodes[i - 1][j].val << " * " << weights[weight_index + j];
+          val += ( layers[i - 1].nodes[j].val * weights[weight_index + j] );
+          std::cout << "(" << layers[i - 1].nodes[j].val << " * " << weights[weight_index + j];
           if(j < n_prev - 1)
             std::cout << ") + ";
           else
@@ -103,7 +115,7 @@ public:
 
         val = activation_fn(val);
 
-        nodes[i][k].val = val;
+        layers[i].nodes[k].val = val;
 
         weight_index += n_prev;
       }
@@ -112,7 +124,7 @@ public:
 
   float calculateError() {
     //last node of the last layer is output node
-    const node& output_node = nodes.back( ).back( );
+    const node& output_node = layers.back( ).nodes.back( );
     return 1.f - output_node.val;
   }
 
@@ -124,9 +136,9 @@ private:
     size_t weight_n = 0;
 
     //get count of weights between neurons
-    for(int i = 1; i < nodes.size(); ++i) {
-      const size_t n_prev = nodes[i - 1].size();
-      const size_t n_next = nodes[i].size();
+    for(int i = 1; i < layers.size(); ++i) {
+      const size_t n_prev = layers[i - 1].size();
+      const size_t n_next = layers[i].size();
 
       weight_n += n_prev * n_next;
     }
@@ -140,7 +152,7 @@ private:
   }
 
 private:
-  std::vector<std::vector<node>> nodes;
+  std::vector<Layer> layers;
   std::vector<float> weights;
   size_t input_neurons;
   size_t output_neurons;
@@ -148,10 +160,10 @@ private:
 };
 
 int main() {
-  NeuralNetwork nn(std::vector<std::vector<node>> {
-    { 0, 0 },
-    { 0, 0, 0, 0 },
-    { 0 }
+  NeuralNetwork nn(std::vector<Layer> {
+    Layer( { 0, 0 } ),
+    Layer( { 0, 0, 0, 0 } ),
+    Layer( { 0 } )
   });
 
   nn.print();
