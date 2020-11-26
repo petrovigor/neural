@@ -89,7 +89,7 @@ public:
 
   void print() const {
     size_t max_lines = 0;
-    for(int i = 0; i < layers.size(); ++i)
+    for(size_t i = 0; i < layers.size(); ++i)
       max_lines = std::max(max_lines, layers[i].size());
 
     for(size_t i = 0; i < max_lines; ++i) {
@@ -105,7 +105,7 @@ public:
 
   //travers neural network and updates node values each once
   void traverse() {
-    for(int i = 1; i < layers.size(); ++i) {
+    for(size_t i = 1; i < layers.size(); ++i) {
       std::cout << "count " << i << " layer of " << (layers.size() - 1) << std::endl;
 
       const size_t n_prev = layers[i - 1].size();
@@ -113,14 +113,14 @@ public:
 
       size_t weight_index = 0;
 
-      for(int k = 0; k < n_next; ++k) {
+      for(size_t k = 0; k < n_next; ++k) {
         float val = 0.f;
 
         std::cout << "[" << layers[i].nodes[k].index << "] = f(";
 
         //std::cout << "from " << nodes[i - 1][j] << " to " << nodes[i][k] << std::endl;
 
-        for(int j = 0; j < n_prev; ++j) {
+        for(size_t j = 0; j < n_prev; ++j) {
           val += ( layers[i - 1].nodes[j].val * weights[weight_index + j] );
           std::cout << "(" << layers[i - 1].nodes[j].val << " * " << weights[weight_index + j];
           if(j < n_prev - 1)
