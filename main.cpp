@@ -54,6 +54,9 @@ int main() {
     { 0.f },
   };
 
+  //last node of the last layer is output node
+  node& output_node = nodes.back( ).back( );
+
   std::vector<float> weights; //may be it should be vector<vector<float>>
   size_t weight_n = 0;
 
@@ -120,7 +123,17 @@ int main() {
     }
   }
 
-  std::cout << "first generation: " << std::endl;
+  //neural network hello world program implements
+  //xor function, where we have two input signals,
+  //one hidden layer with 4 nodes
+  //and only one output signal
+
+  //when input signals are '1' and '0' for xor fn (1 ^ 0),
+  //we are waiting for 1 output, so
+  //error for the last node will be defined as: '1.f - x'
+  const float error = 1.f - output_node.val;
+
+  std::cout << "first generation finished with error: " << error << std::endl;
   print(nodes);
 
   return 0;
