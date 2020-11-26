@@ -32,6 +32,10 @@ float activation_fn(float val) {
   return 1.f / ( 1.f + std::exp( -1.f * val ) );
 }
 
+float derivative_fn(float val) {
+  return val * ( 1.f - val );
+}
+
 struct Layer {
   Layer(const std::vector<node>& _nodes)
     : nodes(_nodes)
@@ -79,6 +83,7 @@ public:
     output_neurons = layers.back( ).size( );
 
     buildStartupWeights();
+    learnCoefficent = 0.5f;
 
     std::cout << "Created neural network with " <<
       layers_count << " layers, " <<
@@ -162,6 +167,7 @@ public:
         std::cout << "\t" << "errors for node " << hidden.nodes[j].index << " windex: " << weight_index;
 
         for(size_t k = 0; k < output.size(); ++k) {
+          //todo: sum of square powers, not just sum
           error += output.nodes[k].error * weights[weight_index];
         }
 
@@ -171,6 +177,35 @@ public:
         //move weight_index to the weight
         //of the next node in hidden layer
         ++weight_index;
+      }
+    }
+  }
+
+  //updates weights between neurons based on thier error
+  void learn() {
+    std::cout << "learn" << std::endl;
+
+    size_t w_index = 0;
+
+    for(size_t i = 1; i < layers.size(); ++i) {
+      std::cout << "updating weights between " << (i-1) << " & " << i << std::endl;
+
+      const size_t from = layers[i - 1].size( );
+      const size_t to = layers[i].size( );
+
+      for(size_t j = 0; j < from; ++j) {
+        for(size_t k = 0; k < to; ++k) {
+
+          const float derivative = derivative_fn( layers[i - 1].nodes[j].val );
+          weights[w_index] += learnCoefficent * layers[i - 1].nodes[j].error * derivative * layers[i].nodes[k].val;
+
+          std::cout << "from " << layers[i - 1].nodes[j].index <<
+            " to " << layers[i].nodes[k].index <<
+            " index = " << w_index << std::endl;
+
+          ++w_index;
+
+        }
       }
     }
   }
@@ -218,6 +253,7 @@ private:
   std::vector<float> weights;
   size_t input_neurons;
   size_t output_neurons;
+  float learnCoefficent; //[0.f, 1.f]
 
 };
 
@@ -238,6 +274,8 @@ int main() {
   //error for the last node will be defined as: '1.f - x'
 
   nn.calculateErrors();
+
+  nn.learn();
 
   return 0;
 }
