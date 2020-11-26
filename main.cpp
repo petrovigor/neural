@@ -83,7 +83,7 @@ public:
     output_neurons = layers.back( ).size( );
 
     buildStartupWeights();
-    learnCoefficent = 0.5f;
+    learnCoefficent = 0.3f;
     generations = 0;
 
     std::cout << "Created neural network with " <<
@@ -359,7 +359,7 @@ struct Teacher {
   }
 
   void teach(NeuralNetwork& nn, int gensToTeach = -1) {
-    const float threshold = 0.01f; //error threshold
+    const float threshold = 0.1f; //error threshold
     const size_t tests_total = tests.size();
 
     if(gensToTeach == -1)
