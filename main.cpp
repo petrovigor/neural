@@ -84,6 +84,7 @@ public:
 
     buildStartupWeights();
     learnCoefficent = 0.5f;
+    generations = 0;
 
     std::cout << "Created neural network with " <<
       layers_count << " layers, " <<
@@ -135,7 +136,9 @@ public:
   //travers neural network and updates node values each once
   void traverse() {
     for(size_t i = 1; i < layers.size(); ++i) {
+#if 0
       std::cout << "count " << i << " layer of " << (layers.size() - 1) << std::endl;
+#endif //0
 
       const size_t n_prev = layers[i - 1].size();
       const size_t n_next = layers[i].size();
@@ -145,19 +148,25 @@ public:
       for(size_t k = 0; k < n_next; ++k) {
         float val = 0.f;
 
+#if 0
         std::cout << "[" << layers[i].nodes[k].index << "] = f(";
+#endif //0
 
         //std::cout << "from " << nodes[i - 1][j] << " to " << nodes[i][k] << std::endl;
 
         for(size_t j = 0; j < n_prev; ++j) {
           val += ( layers[i - 1].nodes[j].val * weights[weight_index + j] );
+#if 0
           std::cout << "(" << layers[i - 1].nodes[j].val << " * " << weights[weight_index + j];
           if(j < n_prev - 1)
             std::cout << ") + ";
           else
             std::cout << "))";
+#endif //0
         }
+#if 0
         std::cout << std::endl;
+#endif //0
 
         val = activation_fn(val);
 
@@ -168,15 +177,29 @@ public:
     }
   }
 
-  void calculateErrors() {
+  auto getGenerations() const noexcept {
+    return generations;
+  }
+
+  void nextGeneration() {
+    ++generations;
+  }
+
+  float calculateErrors() {
+    float totalNetworkError = 0.f;
+
     //calculate error for output node
     node& output_node = outputLayer().nodes.back( );
     output_node.error = 1.f - output_node.val;
+#if 0
     std::cout << "finding errors for output node: " << output_node.error << std::endl;
+#endif //0
 
     //calculate errors for hidden layers
     for(size_t i = layers.size() - 1; i > 1; --i) {
+#if 0
       std::cout << "finding errors for " << i << " layer" << std::endl;
+#endif //0
 
       auto& hidden = layers[i - 1]; //hidden layer
       const auto& output = layers[i]; //output layer
@@ -188,14 +211,17 @@ public:
       for(size_t j = 0; j < hidden.size(); ++j) {
         float error = 0.f;
 
+#if 0
         std::cout << "\t" << "errors for node " << hidden.nodes[j].index << " windex: " << weight_index;
+#endif //0
 
         for(size_t k = 0; k < output.size(); ++k) {
-          //todo: sum of square powers, not just sum
-          error += output.nodes[k].error * weights[weight_index];
+          error += std::pow( output.nodes[k].error * weights[weight_index], 2.f );
         }
 
         hidden.nodes[j].error = error;
+        totalNetworkError += error;
+
         std::cout << " " << error << std::endl;
 
         //move weight_index to the weight
@@ -203,16 +229,48 @@ public:
         ++weight_index;
       }
     }
+
+    return totalNetworkError;
+  }
+
+  void setInput(std::vector<float>& newInput) {
+    auto& input = inputLayer( );
+
+    if(input.size() != newInput.size()) {
+      throw std::invalid_argument("Bad values for input layer");
+    }
+
+    size_t i = 0;
+    for(auto& node : input.nodes) {
+      node.val = newInput[i++];
+    }
+  }
+
+  void setOutput(std::vector<float>& newOutput) {
+    auto& output = outputLayer( );
+
+    if(output.size() != newOutput.size()) {
+      throw std::invalid_argument("Bad values for output layer");
+    }
+
+    size_t i = 0;
+    for(auto& node : output.nodes) {
+      node.val = newOutput[i++];
+    }
   }
 
   //updates weights between neurons based on thier error
   void learn() {
+#if 0
     std::cout << "learn" << std::endl;
+#endif //0
 
     size_t w_index = 0;
 
     for(size_t i = 1; i < layers.size(); ++i) {
+#if 0
       std::cout << "updating weights between " << (i-1) << " & " << i << std::endl;
+#endif //0
 
       const size_t from = layers[i - 1].size( );
       const size_t to = layers[i].size( );
@@ -223,9 +281,11 @@ public:
           const float derivative = derivative_fn( layers[i - 1].nodes[j].val );
           weights[w_index] += learnCoefficent * layers[i - 1].nodes[j].error * derivative * layers[i].nodes[k].val;
 
+#if 0
           std::cout << "from " << layers[i - 1].nodes[j].index <<
             " to " << layers[i].nodes[k].index <<
             " index = " << w_index << std::endl;
+#endif //0
 
           ++w_index;
 
@@ -277,33 +337,91 @@ private:
   std::vector<float> weights;
   size_t input_neurons;
   size_t output_neurons;
+  size_t generations;
   float learnCoefficent; //[0.f, 1.f]
+
+};
+
+struct Teacher {
+
+  struct TestingCase {
+    std::vector<float> input;
+    std::vector<float> output;
+
+    TestingCase(const std::vector<float>& in, const std::vector<float>& out)
+      : input(in)
+      , output(out)
+    { }
+  };
+
+  void addTestingCase(const std::vector<float>& in, const std::vector<float>& out) {
+    tests.emplace_back( TestingCase(in, out) );
+  }
+
+  void teach(NeuralNetwork& nn, int gensToTeach = -1) {
+    const float threshold = 0.01f; //error threshold
+    const size_t tests_total = tests.size();
+
+    if(gensToTeach == -1)
+      std::cout << "Teaching until the end just started" << std::endl;
+    else
+      std::cout << "Teaching " << gensToTeach << " generations just started" << std::endl;
+
+    if(!tests_total) {
+      std::cerr << "No test cases found. Teaching finished" << std::endl;
+      return;
+    }
+
+    float lastError;
+
+    do {
+      nn.nextGeneration();
+
+      for(size_t i = 0; i < tests_total; ++i) {
+#if 0
+        std::cout << "Test case #" << i << std::endl;
+#endif //0
+
+        nn.setInput( tests[i].input );
+        nn.setOutput( tests[i].output );
+
+        nn.traverse( );
+        lastError = nn.calculateErrors();
+        nn.learn();
+      }
+
+      std::cout << "Generation: " << nn.getGenerations() << " error = " << lastError << std::endl;
+
+    } while( gensToTeach > 0 || (lastError > threshold && gensToTeach == -1) );
+
+    if( gensToTeach == -1 ) {
+      std::cout << "Teaching finished due to learned network" << std::endl;
+    } else {
+      std::cout << "No more generations to teach" << std::endl;
+    }
+  }
+
+  std::vector<TestingCase> tests;
 
 };
 
 int main() {
   NeuralNetwork nn ({ 2, 4, 1 });
 
-  nn.print_values();
-  nn.print_weights();
-
-  nn.traverse();
-
   //neural network hello world program implements
   //xor function, where we have two input signals,
   //one hidden layer with 4 nodes
   //and only one output signal
 
-  //when input signals are '1' and '0' for xor fn (1 ^ 0),
-  //we are waiting for 1 output, so
-  //error for the last node will be defined as: '1.f - x'
+  Teacher teacher;
 
-  nn.calculateErrors();
+  //all possible cases of logixal xOR
+  teacher.addTestingCase( {1, 0}, {1} );
+  teacher.addTestingCase( {0, 1}, {1} );
+  teacher.addTestingCase( {0, 0}, {0} );
+  teacher.addTestingCase( {1, 1}, {0} );
 
-  nn.learn();
-
-  nn.print_values();
-  nn.print_weights();
+  teacher.teach( nn );
 
   return 0;
 }
