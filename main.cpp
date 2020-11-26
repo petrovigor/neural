@@ -59,6 +59,9 @@ public:
 
     layers.reserve( layers_count );
     for(size_t i = 0; i < layers_count; ++i) {
+      if( !layer_sizes[i] )
+        throw std::invalid_argument("Layer should not be empty");
+
       layers.emplace_back( std::vector<node>( layer_sizes[i] ) );
     }
 
