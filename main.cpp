@@ -2,6 +2,7 @@
 #include <iostream>
 #include <algorithm>
 #include <string>
+#include <time.h>
 
 float randf() {
   //returns [0.0f, 1.0f]
@@ -222,7 +223,9 @@ public:
         hidden.nodes[j].error = error;
         totalNetworkError += error;
 
+#if 0
         std::cout << " " << error << std::endl;
+#endif //0
 
         //move weight_index to the weight
         //of the next node in hidden layer
@@ -406,6 +409,8 @@ struct Teacher {
 };
 
 int main() {
+  std::srand( time( 0 ) );
+
   NeuralNetwork nn ({ 2, 4, 1 });
 
   //neural network hello world program implements
