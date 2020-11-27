@@ -441,15 +441,42 @@ struct Teacher {
 
 };
 
+void test_cases() {
+
+  {
+#if 0
+    //minimal network used to
+    //get 0.25 for input = 1.0
+
+    NeuralNetwork nn ({ 1, 1 });
+
+    Teacher teacher;
+    teacher.addTestingCase( { 1.f }, { 0.25f } );
+
+    teacher.teach( nn, 25 );
+#endif //0
+  }
+
+  {
+    //network used to solve boolean AND
+
+    NeuralNetwork nn ({ 2, 4, 1 });
+
+    Teacher teacher;
+    teacher.addTestingCase( { 1.f, 1.f }, { 1.f } );
+    teacher.addTestingCase( { 0.f, 0.f }, { 0.f } );
+    teacher.addTestingCase( { 1.f, 0.f }, { 0.f } );
+    teacher.addTestingCase( { 0.f, 1.f }, { 0.f } );
+
+    teacher.teach( nn, 500 );
+  }
+
+}
+
 int main() {
   std::srand( time( 0 ) );
 
-  NeuralNetwork nn ({ 1, 1 });
-
-  Teacher teacher;
-  teacher.addTestingCase( { 1.f }, { 0.25f } );
-
-  teacher.teach( nn, 25 );
+  test_cases( );
 
   return 0;
 }
