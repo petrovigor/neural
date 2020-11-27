@@ -46,6 +46,19 @@ struct Layer {
     weight_start_index = i;
   }
 
+  std::vector<float> values() const {
+    std::vector<float> vals;
+
+    const size_t n = nodes.size();
+    vals.resize( n );
+
+    for(size_t i = 0; i < n; ++i) {
+      vals[i] = nodes[i].val;
+    }
+
+    return vals;
+  }
+
   std::vector<node> nodes;
 
   //this logic should be moved into main class
@@ -133,6 +146,7 @@ public:
   }
 
   //travers neural network and updates node values each once
+  //this function is used for teaching only
   void traverse() {
     for(size_t i = 1; i < layers.size(); ++i) {
 #if 0
@@ -174,6 +188,18 @@ public:
         weight_index += n_prev;
       }
     }
+  }
+
+  //travers neural network and
+  //returns output layer values as array of [0, 1]
+  //used when neural network is teached already for get result
+  std::vector<float> calc(const std::vector<float>& source) {
+    std::vector<float> dest;
+
+    setSourceData( source );
+    traverse( );
+
+    return getOutputLayer( ).values( );
   }
 
   auto getGenerations() const noexcept {
@@ -450,17 +476,32 @@ void test_cases() {
 
     NeuralNetwork nn ({ 1, 1 });
 
+    std::cout << "not teached calc( 0.f ) = " << nn.calc( { 0.f } ).back( ) << std::endl;
+    std::cout << "not teached calc( 0.5f ) = " << nn.calc( { 0.5f } ).back( ) << std::endl;
+    std::cout << "not teached calc( 1.f ) = " << nn.calc( { 1.f } ).back( ) << std::endl;
+
     Teacher teacher;
     teacher.addTestingCase( { 1.f }, { 0.25f } );
 
-    teacher.teach( nn, 25 );
+    teacher.teach( nn, 20 );
+
+    std::cout << "teached calc( 0.f ) = " << nn.calc( { 0.f } ).back( ) << std::endl;
+    std::cout << "teached calc( 0.5f ) = " << nn.calc( { 0.5f } ).back( ) << std::endl;
+    std::cout << "teached calc( 1.f ) = " << nn.calc( { 1.f } ).back( ) << std::endl;
+
 #endif //0
   }
 
+#if 1
   {
     //network used to solve boolean AND
 
     NeuralNetwork nn ({ 2, 4, 1 });
+
+    std::cout << "not teached calc( 1.f, 1.f ) = " << nn.calc( { 1.f, 1.f } ).back( ) << std::endl;
+    std::cout << "not teached calc( 0.f, 0.f ) = " << nn.calc( { 0.f, 0.f } ).back( ) << std::endl;
+    std::cout << "not teached calc( 1.f, 0.f ) = " << nn.calc( { 1.f, 0.f } ).back( ) << std::endl;
+    std::cout << "not teached calc( 0.f, 1.f ) = " << nn.calc( { 0.f, 1.f } ).back( ) << std::endl;
 
     Teacher teacher;
     teacher.addTestingCase( { 1.f, 1.f }, { 1.f } );
@@ -469,7 +510,14 @@ void test_cases() {
     teacher.addTestingCase( { 0.f, 1.f }, { 0.f } );
 
     teacher.teach( nn, 500 );
+
+    std::cout << "teached calc( 1.f, 1.f ) = " << nn.calc( { 1.f, 1.f } ).back( ) << std::endl;
+    std::cout << "teached calc( 0.f, 0.f ) = " << nn.calc( { 0.f, 0.f } ).back( ) << std::endl;
+    std::cout << "teached calc( 1.f, 0.f ) = " << nn.calc( { 1.f, 0.f } ).back( ) << std::endl;
+    std::cout << "teached calc( 0.f, 1.f ) = " << nn.calc( { 0.f, 1.f } ).back( ) << std::endl;
+
   }
+#endif //0
 
 }
 
